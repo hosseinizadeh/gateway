@@ -78,7 +78,7 @@ abstract class PortAbstract
 	 * @var string
 	 */
 	protected $trackingCode;
-	
+
 
 	/**
 	 * Initialize of class
@@ -107,19 +107,17 @@ abstract class PortAbstract
 	 */
 	function getTable()
 	{
-	    return $this->db->table('gateway_transactions');
 		return $this->db->table($this->config->get('gateway.table'));
 	}
-	
 
-	
+
+
 
 	/**
 	 * @return mixed
 	 */
 	function getLogTable()
 	{
-        return $this->db->table('gateway_transactions_logs');
 		return $this->db->table($this->config->get('gateway.table') . '_logs');
 	}
 
@@ -142,11 +140,11 @@ abstract class PortAbstract
 	{
 		$this->portName = $name;
 	}
-	
+
 	function setRrn($rrn){
 	    $this->rrn = $rrn;
     }
-    
+
     function getRrn(){
 	    return $this->rrn;
     }

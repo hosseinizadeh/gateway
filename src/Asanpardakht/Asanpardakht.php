@@ -241,8 +241,8 @@ class Asanpardakht extends PortAbstract implements PortInterface
             $result = $this->clientsPost($this->serverUrl . "Verify", "POST", [
                 'headers' => [
                     'Content-Type' => 'application/json',
-                    'usr' => $this->getUSR(),
-                    'pwd' => $this->getPWD(),
+                    'usr' => $this->config->get('gateway.asanpardakht.username'),
+                    'pwd' =>$this->config->get('gateway.asanpardakht.password'),
                 ],
                 'body' => $objectRequest,
             ]);
