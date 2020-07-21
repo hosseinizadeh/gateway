@@ -1,6 +1,7 @@
 <?php
 namespace Hosseinizadeh\Gateway;
 
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Request;
 use Hosseinizadeh\Gateway\Enum;
 use Carbon\Carbon;
@@ -52,6 +53,11 @@ abstract class PortAbstract
 	 */
 	protected $amount;
 
+    /**
+     * @var
+     */
+    protected $rrn;
+
 	/**
 	 * Description of transaction
 	 *
@@ -72,6 +78,7 @@ abstract class PortAbstract
 	 * @var string
 	 */
 	protected $trackingCode;
+	
 
 	/**
 	 * Initialize of class
@@ -98,16 +105,21 @@ abstract class PortAbstract
 	/**
 	 * @return mixed
 	 */
-	function getTable() 
+	function getTable()
 	{
+	    return $this->db->table('gateway_transactions');
 		return $this->db->table($this->config->get('gateway.table'));
 	}
+	
+
+	
 
 	/**
 	 * @return mixed
 	 */
 	function getLogTable()
 	{
+        return $this->db->table('gateway_transactions_logs');
 		return $this->db->table($this->config->get('gateway.table') . '_logs');
 	}
 
@@ -130,6 +142,14 @@ abstract class PortAbstract
 	{
 		$this->portName = $name;
 	}
+	
+	function setRrn($rrn){
+	    $this->rrn = $rrn;
+    }
+    
+    function getRrn(){
+	    return $this->rrn;
+    }
 
 	/**
 	 * Set custom description on current transaction
@@ -245,6 +265,7 @@ abstract class PortAbstract
 	{
 		$uid = $this->getTimeId();
 
+
 		$this->transactionId = $this->getTable()->insert([
 			'id' 			=> $uid,
 			'port' 			=> $this->getPortName(),
@@ -357,4 +378,18 @@ abstract class PortAbstract
 		(!empty($url_array['port']) ? ':' . $url_array['port'] : null) .
 		$url_array['path'] . '?' . http_build_query($query_array);
 	}
+
+
+    protected function clientsPost($url , $methods , array $options=array())
+    {
+        $clients = new Client();
+        try {
+            $result =  $clients->request($methods,$url,$options);
+            $response = $result->getBody()->getContents();
+        }catch (\Exception $e){
+            $response =  $e->getCode();
+        }
+        return $response;
+    }
+
 }

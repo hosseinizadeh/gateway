@@ -48,6 +48,7 @@ class CreateGatewayTransactionsTable extends Migration
 			])->default(Enum::TRANSACTION_INIT);
 			$table->string('ip', 20)->nullable();
 			$table->timestamp('payment_date')->nullable();
+            $table->text('payGateTrandID')->nullable();
 			$table->nullableTimestamps();
 			$table->softDeletes();
 		});
