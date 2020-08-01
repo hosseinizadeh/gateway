@@ -169,7 +169,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $objectRequest = json_encode($data, true);
 
         try {
-            dd($this->password);
+        
             $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, [
                 "Content-Type: application/json",
                 "pwd: $this->password",
@@ -190,7 +190,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
         throw new AsanpardakhtException($response);
     }
-
 
     /**
      * Check user payment
