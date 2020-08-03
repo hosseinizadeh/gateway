@@ -10,7 +10,14 @@ use Carbon\Carbon;
 abstract class PortAbstract
 {
 
+    /**
+     * @var
+     */
     protected $username;
+
+    /**
+     * @var
+     */
     protected $password;
 
 
@@ -393,6 +400,15 @@ abstract class PortAbstract
     protected function clientsPost($url, $methods, $options = array(), $headers = [])
     {
         try {
+            $this->username = $this->config->get('gateway.asanpardakht.username');
+            $this->password = $this->config->get('gateway.asanpardakht.password');
+            if(!empty($headers)){
+               $headers = [
+                   "Content-Type: application/json",
+                   "pwd: $this->password",
+                   "usr: $this->username"
+               ];
+            }
             $curl = curl_init();
             curl_setopt_array($curl, array(
                 CURLOPT_URL => $url,
@@ -407,13 +423,12 @@ abstract class PortAbstract
                 CURLOPT_HTTPHEADER => $headers,
             ));
 
-
                 $response = curl_exec($curl);
                 $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
                 curl_close($curl);
                 return [
                     'code' => $code,
-                    'result' => $response
+                    'result' => trim($response, '"')
                 ];
 
         } catch (\Exception $e) {
@@ -424,6 +439,6 @@ abstract class PortAbstract
         return $response;
     }
 
-    
+
 
 }

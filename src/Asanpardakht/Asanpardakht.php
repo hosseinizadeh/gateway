@@ -73,9 +73,12 @@ class Asanpardakht extends PortAbstract implements PortInterface
                     ->where(['price' => $jsonDecode->amount, 'ref_id' => $jsonDecode->refID])
                     ->first();
 
+                $resultVerify =[
+                    'code' => 471
+                ];
                 if (isset($find) && $find) {
 
-                    $update = $find->update([
+                    $find->update([
                         'tracking_code' => $jsonDecode->payGateTranID,
                         'card_number' => $jsonDecode->cardNumber,
                     ]);
@@ -94,13 +97,14 @@ class Asanpardakht extends PortAbstract implements PortInterface
         }
 
         $this->transactionFailed();
-        $this->newLog($resultVerify['status'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['status']));
+        $this->newLog($resultVerify['code'] , AsanpardakhtException::getMessageByCodeVerify($resultVerify['code']));
         throw new AsanpardakhtException($resultVerify, true);
     }
 
+
     /**
-     * Sets callback url
      * @param $url
+     * @return $this|string
      */
     function setCallback($url)
     {
@@ -121,11 +125,9 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $url;
     }
 
+
     /**
-     * Send pay request to server
-     *
-     * @return void
-     *
+     * @return bool
      * @throws AsanpardakhtException
      */
     protected function sendPayRequest()
@@ -147,15 +149,14 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $localDate = $Time;
 
         $additionalData = $this->getCustomDesc();
-        $callBackUrl = $this->getCallback();
 
         $data = [
             'merchantConfigurationId' => $this->config->get('gateway.asanpardakht.merchantConfigId'),
             'serviceTypeId' => 1,
             'localInvoiceId' => $orderId,
-            'amountInRials' => $this->amount,
+            'amountInRials' => $price,
             'localDate' => $localDate,
-            'additionalData' => $this->getCustomDesc(),
+            'additionalData' => $additionalData,
             'callbackURL' => isset($this->callbackUrl) ? $this->callbackUrl . "/?factor=" . $orderId : Enum::CALL_BACK_URL_ASANPARDAKHT . "/?factor=" . $orderId,
             'paymentId' => '0',
             'settlementPortions' => [
@@ -169,13 +170,8 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $objectRequest = json_encode($data, true);
 
         try {
-            dd($this->password);
-            $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, [
-                "Content-Type: application/json",
-                "pwd: $this->password",
-                "usr: $this->username"
-            ]);
-
+        
+            $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, "yes");
             if (isset($response['code']) && isset($response['result']) && $response['code'] == 200) {
                 $this->refId = $response['result'];
                 $this->transactionSetRefId();
@@ -193,13 +189,10 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
 
     /**
-     * Check user payment
-     *
-     * @return bool
-     *
+     * @param $payGateTranId
+     * @return array
      * @throws AsanpardakhtException
      */
-
     protected function userPayment($payGateTranId)
     {
         $data = [
@@ -207,14 +200,12 @@ class Asanpardakht extends PortAbstract implements PortInterface
             'payGateTranId' => $payGateTranId
         ];
         $objectRequest = json_encode($data);
-        $result = "";
+        $result = [
+            'code' => 471
+        ];
         try {
 
-            $result = $this->clientsPost($this->serverUrl . "Verify", "POST", $objectRequest, [
-                "Content-Type: application/json",
-                "pwd: $this->password",
-                "usr: $this->username",
-            ]);
+            $result = $this->clientsPost($this->serverUrl . "Verify", "POST", $objectRequest, "yes");
 
             if (isset($result) && $result['code'] == 200) {
                 return [
@@ -257,12 +248,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
     {
         if ($value) {
             try {
-                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET",[],[
-                    "Content-Type: application/json",
-                    "pwd: $this->password",
-                    "usr: $this->username"
-                ]);
-
+                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET",[],"yes");
                 if (isset($result) && $result['code'] == 200) {
                     return [
                         'status' => 200,
