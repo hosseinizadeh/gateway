@@ -170,7 +170,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $objectRequest = json_encode($data, true);
 
         try {
-        
             $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, "yes");
             if (isset($response['code']) && isset($response['result']) && $response['code'] == 200) {
                 $this->refId = $response['result'];
@@ -186,7 +185,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
         throw new AsanpardakhtException($response);
     }
-
 
     /**
      * @param $payGateTranId
