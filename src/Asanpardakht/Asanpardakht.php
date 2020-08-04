@@ -20,7 +20,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
     protected $serverUrl = 'https://rest.asanpardakht.net/v1/';
 
-
     /**
      * {@inheritdoc}
      */
@@ -30,7 +29,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
         return $this;
     }
-
 
     /**
      * {@inheritdoc}
@@ -73,7 +71,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
                     ->where(['price' => $jsonDecode->amount, 'ref_id' => $jsonDecode->refID])
                     ->first();
 
-                $resultVerify =[
+                $resultVerify = [
                     'code' => 471
                 ];
                 if (isset($find) && $find) {
@@ -97,10 +95,9 @@ class Asanpardakht extends PortAbstract implements PortInterface
         }
 
         $this->transactionFailed();
-        $this->newLog($resultVerify['code'] , AsanpardakhtException::getMessageByCodeVerify($resultVerify['code']));
+        $this->newLog($resultVerify['code'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['code']));
         throw new AsanpardakhtException($resultVerify, true);
     }
-
 
     /**
      * @param $url
@@ -112,7 +109,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $this;
     }
 
-
     /**
      * Gets callback url
      * @return string
@@ -121,10 +117,9 @@ class Asanpardakht extends PortAbstract implements PortInterface
     {
         if (!$this->callbackUrl)
             $this->callbackUrl = $this->config->get('gateway.asanpardakht.callback-url');
-            $url = $this->makeCallback($this->callbackUrl, ['transaction_id' => $this->transactionId()]);
+        $url = $this->makeCallback($this->callbackUrl, ['transaction_id' => $this->transactionId()]);
         return $url;
     }
-
 
     /**
      * @return bool
@@ -138,7 +133,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
         $Time = $this->getTime();
 
-        if($Time == false){
+        if ($Time == false) {
             return false;
         }
 
@@ -170,6 +165,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $objectRequest = json_encode($data, true);
 
         try {
+
             $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, "yes");
             if (isset($response['code']) && isset($response['result']) && $response['code'] == 200) {
                 $this->refId = $response['result'];
@@ -246,7 +242,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
     {
         if ($value) {
             try {
-                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET",[],"yes");
+                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET", [], "yes");
                 if (isset($result) && $result['code'] == 200) {
                     return [
                         'status' => 200,
@@ -262,6 +258,54 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->transactionFailed();
         $this->newLog($result['code'], AsanpardakhtException::getMessageByCode($result['code']));
         throw new AsanpardakhtException($result);
+    }
+
+    /**
+     * @param $url
+     * @param $methods
+     * @param array $options
+     * @return int|mixed
+     */
+    private function clientsPost($url, $methods, $options = array(), $headers = [])
+    {
+        try {
+            $this->username = $this->config->get('gateway.asanpardakht.username');
+            $this->password = $this->config->get('gateway.asanpardakht.password');
+            if(!empty($headers)){
+                $headers = [
+                    "Content-Type: application/json",
+                    "pwd: $this->password",
+                    "usr: $this->username"
+                ];
+            }
+            $curl = curl_init();
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_CUSTOMREQUEST => $methods,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_POSTFIELDS => $options,
+                CURLOPT_HTTPHEADER => $headers,
+            ));
+
+            $response = curl_exec($curl);
+            $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            curl_close($curl);
+            return [
+                'code' => $code,
+                'result' => trim($response, '"')
+            ];
+
+        } catch (\Exception $e) {
+            //$err = curl_error($curl);
+            $response = $e->getCode();
+        }
+
+        return $response;
     }
 
 }
