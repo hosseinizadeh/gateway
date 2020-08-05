@@ -98,6 +98,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($resultVerify['code'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['code']));
         new AsanpardakhtException($resultVerify, true);
         return $this;
+
     }
 
     /**
@@ -243,7 +244,9 @@ class Asanpardakht extends PortAbstract implements PortInterface
     {
         if ($value) {
             try {
-                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET", [], "yes");
+
+                $result = $this->clientsPost($this->serverUrl . "TranResult?merchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&localInvoiceId=" . $value . "", "GET", [], "yes");
+
                 if (isset($result) && $result['code'] == 200) {
                     return [
                         'status' => 200,
