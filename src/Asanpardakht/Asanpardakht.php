@@ -31,10 +31,24 @@ class Asanpardakht extends PortAbstract implements PortInterface
     }
 
     /**
+     * @param array $wages
+     * @return $this
+     */
+    public function setWages(array $wages)
+    {
+        $this->wages = $wages;
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function ready()
     {
+        if (isset($this->wages)) {
+            $this->sendPayRequestWages();
+            return $this;
+        }
         $this->sendPayRequest();
 
         return $this;
@@ -50,7 +64,9 @@ class Asanpardakht extends PortAbstract implements PortInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param object $transaction
+     * @return $this|PortAbstract|PortInterface
+     * @throws AsanpardakhtException
      */
     public function verify($transaction)
     {
@@ -58,6 +74,11 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
         $this->transactionId = $transaction->id;
         $resultCheckTransaction = $this->checkTransaction($transaction->id);
+        $resultVerify = [
+            'status' => 471,
+            'code' => 471
+        ];
+
         if (isset($resultCheckTransaction['status']) && $resultCheckTransaction['status'] == 200) {
             $jsonDecode = json_decode($resultCheckTransaction['result']);
             if (isset($jsonDecode->payGateTranID)) {
@@ -67,36 +88,27 @@ class Asanpardakht extends PortAbstract implements PortInterface
                 $salesOrderID = $jsonDecode->salesOrderID;
                 $this->trackingCode = $jsonDecode->payGateTranID;
 
-                $find = $this->getTable()->whereId($transaction->id)
-                    ->where(['price' => $jsonDecode->amount, 'ref_id' => $jsonDecode->refID])
-                    ->first();
+                $resultVerify = $this->userPayment($jsonDecode->payGateTranID);
 
-                $resultVerify = [
-                    'code' => 471
-                ];
-                if (isset($find) && $find) {
-
-                    $find->update([
-                        'tracking_code' => $jsonDecode->payGateTranID,
-                        'card_number' => $jsonDecode->cardNumber,
-                    ]);
-
-                    $resultVerify = $this->userPayment($jsonDecode->payGateTranID);
-
-                    if ($resultVerify['status'] == 200) {
-                        return true;
-                    } else {
-                        $this->transactionFailed();
-                        $this->newLog($resultVerify['status'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['status']));
-                        throw new AsanpardakhtException($resultVerify, true);
-                    }
+                if ($resultVerify['status'] == 200) {
+                    $this->transactionSucceed();
+                    $this->newLog($resultVerify['status'], Enum::TRANSACTION_SUCCEED_TEXT);
+                } else {
+                    $this->transactionFailed();
+                    $this->newLog($resultVerify['status'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['status']));
+                    throw new AsanpardakhtException($resultVerify);
                 }
+            } else {
+                $this->transactionFailed();
+                $this->newLog($resultVerify['status'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['status']));
+                throw new AsanpardakhtException($resultVerify);
             }
+        } else {
+            $this->transactionFailed();
+            $this->newLog($resultVerify['status'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['status']));
+            throw new AsanpardakhtException($resultVerify);
         }
 
-        $this->transactionFailed();
-        $this->newLog($resultVerify['code'], AsanpardakhtException::getMessageByCodeVerify($resultVerify['code']));
-        new AsanpardakhtException($resultVerify, true);
         return $this;
     }
 
@@ -183,6 +195,68 @@ class Asanpardakht extends PortAbstract implements PortInterface
         throw new AsanpardakhtException($response);
     }
 
+
+    /**
+     * @return bool
+     * @throws AsanpardakhtException
+     */
+    protected function sendPayRequestWages(){
+
+        $this->newTransaction();
+        $orderId = $this->transactionId();
+        $price = $this->amount;
+
+        $Time = $this->getTime();
+
+        if ($Time == false) {
+            return false;
+        }
+
+        $this->username = $this->config->get('gateway.asanpardakht.username');
+        $this->password = $this->config->get('gateway.asanpardakht.password');
+
+        $Time = trim($Time, '"');
+        $localDate = $Time;
+
+        $additionalData = $this->getCustomDesc();
+
+        list($array, $errors) = $this->wagesArray();
+        if (!isset($array) || $errors == true) {
+            return false;
+        }
+
+        $data = [
+            'merchantConfigurationId' => $this->config->get('gateway.asanpardakht.merchantConfigId'),
+            'serviceTypeId' => 1,
+            'localInvoiceId' => $orderId,
+            'amountInRials' => $price,
+            'localDate' => $localDate,
+            'additionalData' => $additionalData,
+            'callbackURL' => isset($this->callbackUrl) ? $this->callbackUrl . "/?transaction_id=" . $orderId : Enum::CALL_BACK_URL_ASANPARDAKHT . "/?transaction_id=" . $orderId,
+            'paymentId' => '0',
+            'settlementPortions' => $array,
+        ];
+
+        $objectRequest = json_encode($data, true);
+
+        try {
+            $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, "yes");
+            if (isset($response['code']) && isset($response['result']) && $response['code'] == 200) {
+                $this->refId = $response['result'];
+                $this->transactionSetRefId();
+                return true;
+            }
+        } catch (\Exception $e) {
+            $this->transactionFailed();
+            $this->newLog('httpResponse', $e->getMessage());
+            throw $e;
+        }
+        $this->transactionFailed();
+        $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
+        throw new AsanpardakhtException($response);
+    }
+
+
     /**
      * @param $payGateTranId
      * @return array
@@ -196,6 +270,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         ];
         $objectRequest = json_encode($data);
         $result = [
+            'status' => 471,
             'code' => 471
         ];
         try {
@@ -205,11 +280,12 @@ class Asanpardakht extends PortAbstract implements PortInterface
             if (isset($result) && $result['code'] == 200) {
                 return [
                     'status' => 200,
+                    'code' => 200,
                     'result' => $result['result']
                 ];
             }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->transactionFailed();
             $this->newLog('httpResponse', $e->getMessage());
             throw $e;
@@ -236,36 +312,37 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
     /**
      * @param $value
-     * @return array
-     * @throws AsanpardakhtException
+     * @return array|bool
+     * @throws \Exception
      */
     public function checkTransaction($value)
     {
         if ($value) {
             try {
-                $result = $this->clientsPost($this->serverUrl . "TranResult?MerchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&LocalInvoiceId=" . $value . "", "GET", [], "yes");
+
+                $result = $this->clientsPost($this->serverUrl . "TranResult?merchantConfigurationId=" . $this->config->get('gateway.asanpardakht.merchantConfigId') . "&localInvoiceId=" . $value . "", "GET", [], "yes");
+
                 if (isset($result) && $result['code'] == 200) {
                     return [
                         'status' => 200,
                         'result' => $result['result']
                     ];
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $this->transactionFailed();
                 $this->newLog('httpResponse', $e->getMessage());
                 throw $e;
             }
         }
-        $this->transactionFailed();
-        $this->newLog($result['code'], AsanpardakhtException::getMessageByCode($result['code']));
-        throw new AsanpardakhtException($result);
+        return true;
     }
 
     /**
      * @param $url
      * @param $methods
      * @param array $options
-     * @return int|mixed
+     * @param array $headers
+     * @return array|bool|int|mixed|string
      */
     private function clientsPost($url, $methods, $options = array(), $headers = [])
     {
@@ -307,6 +384,26 @@ class Asanpardakht extends PortAbstract implements PortInterface
         }
 
         return $response;
+    }
+
+    /**
+     * @return array
+     */
+    protected function wagesArray(): array
+    {
+        $errors = false;
+        $array = [];
+        if (isset($this->wages) && is_array($this->wages)) {
+            foreach ($this->wages as $itemWages) {
+                $array [] = [
+                    'iban' => $itemWages['iban'],
+                    'amountInRials' => $itemWages['amount']
+                ];
+            }
+        } else {
+            $errors = true;
+        }
+        return array($array, $errors);
     }
 
 }

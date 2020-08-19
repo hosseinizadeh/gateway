@@ -13,6 +13,15 @@ abstract class PortAbstract
     /**
      * @var
      */
+    public $wages;
+
+    /**
+     * @var
+     */
+
+    /**
+     * @var
+     */
     protected $username;
 
     /**
