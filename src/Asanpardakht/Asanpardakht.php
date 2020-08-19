@@ -30,7 +30,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $this;
     }
 
-
     /**
      * @param array $wages
      * @return $this
@@ -41,7 +40,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $this;
     }
 
-
     /**
      * {@inheritdoc}
      */
@@ -51,8 +49,8 @@ class Asanpardakht extends PortAbstract implements PortInterface
             $this->sendPayRequestWages();
             return $this;
         }
-
         $this->sendPayRequest();
+
         return $this;
     }
 
@@ -221,10 +219,12 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
         $additionalData = $this->getCustomDesc();
 
+
         list($array, $errors) = $this->wagesArray();
         if (!isset($array) || $errors == true) {
             return false;
         }
+
 
         $data = [
             'merchantConfigurationId' => $this->config->get('gateway.asanpardakht.merchantConfigId'),
@@ -235,12 +235,13 @@ class Asanpardakht extends PortAbstract implements PortInterface
             'additionalData' => $additionalData,
             'callbackURL' => isset($this->callbackUrl) ? $this->callbackUrl . "/?transaction_id=" . $orderId : Enum::CALL_BACK_URL_ASANPARDAKHT . "/?transaction_id=" . $orderId,
             'paymentId' => '0',
-            'settlementPortions' => $array,
+            'settlementPortions' => $array
         ];
 
         $objectRequest = json_encode($data, true);
 
         try {
+
             $response = $this->clientsPost($this->serverUrl . "Token", 'POST', $objectRequest, "yes");
             if (isset($response['code']) && isset($response['result']) && $response['code'] == 200) {
                 $this->refId = $response['result'];
@@ -256,6 +257,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
         throw new AsanpardakhtException($response);
     }
+
 
     /**
      * @param $payGateTranId
