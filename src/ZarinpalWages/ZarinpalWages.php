@@ -32,7 +32,7 @@ class ZarinpalWages extends PortAbstract implements PortInterface
      * @var string
      */
     protected $wagesVerify = "https://api.zarinpal.com/pg/v4/payment/verify.json";
-    
+
     /**
      * Address of germany SOAP server
      *
