@@ -30,6 +30,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $this;
     }
 
+
     /**
      * @param array $wages
      * @return $this
@@ -40,6 +41,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         return $this;
     }
 
+
     /**
      * {@inheritdoc}
      */
@@ -49,8 +51,8 @@ class Asanpardakht extends PortAbstract implements PortInterface
             $this->sendPayRequestWages();
             return $this;
         }
-        $this->sendPayRequest();
 
+        $this->sendPayRequest();
         return $this;
     }
 
@@ -195,7 +197,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         throw new AsanpardakhtException($response);
     }
 
-
     /**
      * @return bool
      * @throws AsanpardakhtException
@@ -255,7 +256,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
         throw new AsanpardakhtException($response);
     }
-
 
     /**
      * @param $payGateTranId

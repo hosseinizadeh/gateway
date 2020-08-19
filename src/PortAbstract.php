@@ -18,10 +18,6 @@ abstract class PortAbstract
     /**
      * @var
      */
-
-    /**
-     * @var
-     */
     protected $username;
 
     /**
