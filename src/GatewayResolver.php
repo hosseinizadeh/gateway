@@ -22,19 +22,19 @@ use Illuminate\Support\Facades\DB;
 class GatewayResolver
 {
 
-    protected $request;
+	protected $request;
 
-    /**
-     * @var Config
-     */
-    public $config;
+	/**
+	 * @var Config
+	 */
+	public $config;
 
-    /**
-     * Keep current port driver
-     *
-     * @var Mellat|Saman|Sadad|Zarinpal|Payir|Parsian
-     */
-    protected $port;
+	/**
+	 * Keep current port driver
+	 *
+	 * @var Mellat|Saman|Sadad|Zarinpal|Payir|Parsian
+	 */
+	protected $port;
 
     /**
      * GatewayResolver constructor.
@@ -43,27 +43,28 @@ class GatewayResolver
      * @throws PortNotFoundException
      */
     public function __construct($config = null, $port = null)
-    {
-        $this->config = app('config');
-        $this->request = app('request');
+	{
+		$this->config = app('config');
+		$this->request = app('request');
 
-        if ($this->config->has('gateway.timezone'))
-            date_default_timezone_set($this->config->get('gateway.timezone'));
+		if ($this->config->has('gateway.timezone'))
+			date_default_timezone_set($this->config->get('gateway.timezone'));
 
-        if (!is_null($port)) $this->make($port);
-    }
+		if (!is_null($port)) $this->make($port);
+	}
 
-    /**
-     * Get supported ports
-     *
-     * @return array
-     */
-    public function getSupportedPorts()
-    {
-        return [
+	/**
+	 * Get supported ports
+	 *
+	 * @return array
+	 */
+	public function getSupportedPorts()
+	{
+		return [
             Enum::MELLAT,
             Enum::SADAD,
             Enum::ZARINPAL,
+            Enum::ZARINPALWAGES,
             Enum::PARSIAN,
             Enum::PASARGAD,
             Enum::SAMAN,
@@ -72,7 +73,7 @@ class GatewayResolver
             Enum::PAYIR,
             Enum::YEKPAY
         ];
-    }
+	}
 
     /**
      * @param $name
@@ -81,102 +82,102 @@ class GatewayResolver
      * @throws PortNotFoundException
      */
     public function __call($name, $arguments)
-    {
+	{
 
-        // calling by this way ( Gateway::mellat()->.. , Gateway::parsian()->.. )
-        if(in_array(strtoupper($name),$this->getSupportedPorts())){
-            return $this->make($name);
-        }
+		// calling by this way ( Gateway::mellat()->.. , Gateway::parsian()->.. )
+		if(in_array(strtoupper($name),$this->getSupportedPorts())){
+			return $this->make($name);
+		}
 
-        return call_user_func_array([$this->port, $name], $arguments);
-    }
+		return call_user_func_array([$this->port, $name], $arguments);
+	}
 
-    /**
-     * Gets query builder from you transactions table
-     * @return mixed
-     */
-    function getTable()
-    {
-        return DB::table($this->config->get('gateway.table'));
-    }
+	/**
+	 * Gets query builder from you transactions table
+	 * @return mixed
+	 */
+	function getTable()
+	{
+		return DB::table($this->config->get('gateway.table'));
+	}
 
-    /**
-     * Callback
-     *
-     * @return $this->port
-     *
-     * @throws InvalidRequestException
-     * @throws NotFoundTransactionException
-     * @throws PortNotFoundException
-     * @throws RetryException
-     */
-    public function verify()
-    {
-        if (!$this->request->has('transaction_id') && !$this->request->has('iN') && !$this->request->has('factor'))
-            throw new InvalidRequestException;
-        if ($this->request->has('transaction_id')) {
-            $id = $this->request->get('transaction_id');
-        } elseif ($this->request->has('factor')) {
+	/**
+	 * Callback
+	 *
+	 * @return $this->port
+	 *
+	 * @throws InvalidRequestException
+	 * @throws NotFoundTransactionException
+	 * @throws PortNotFoundException
+	 * @throws RetryException
+	 */
+	public function verify()
+	{
+		if (!$this->request->has('transaction_id') && !$this->request->has('iN') && !$this->request->has('factor'))
+			throw new InvalidRequestException;
+		if ($this->request->has('transaction_id')) {
+			$id = $this->request->get('transaction_id');
+		} elseif ($this->request->has('factor')) {
             $id = $this->request->get('factor');
         } else {
-            $id = $this->request->get('iN');
-        }
+			$id = $this->request->get('iN');
+		}
 
-        $transaction = $this->getTable()->whereId($id)->first();
+		$transaction = $this->getTable()->whereId($id)->first();
 
-        if (!$transaction)
-            throw new NotFoundTransactionException;
+		if (!$transaction)
+			throw new NotFoundTransactionException;
 
-        if (in_array($transaction->status, [Enum::TRANSACTION_SUCCEED, Enum::TRANSACTION_FAILED]))
-            throw new RetryException;
+		if (in_array($transaction->status, [Enum::TRANSACTION_SUCCEED, Enum::TRANSACTION_FAILED]))
+			throw new RetryException;
 
-        $this->make($transaction->port);
+		$this->make($transaction->port);
 
-        return $this->port->verify($transaction);
-    }
+		return $this->port->verify($transaction);
+	}
 
 
-    /**
-     * Create new object from port class
-     *
-     * @param int $port
-     * @throws PortNotFoundException
-     */
-    function make($port)
-    {
-        if ($port InstanceOf Mellat) {
-            $name = Enum::MELLAT;
-        } elseif ($port InstanceOf Parsian) {
-            $name = Enum::PARSIAN;
-        } elseif ($port InstanceOf Saman) {
-            $name = Enum::SAMAN;
-        } elseif ($port InstanceOf Zarinpal) {
-            $name = Enum::ZARINPAL;
-        }elseif($port instanceof ZarinpalWages){
+	/**
+	 * Create new object from port class
+	 *
+	 * @param int $port
+	 * @throws PortNotFoundException
+	 */
+	function make($port)
+	{
+		if ($port InstanceOf Mellat) {
+			$name = Enum::MELLAT;
+		} elseif ($port InstanceOf Parsian) {
+			$name = Enum::PARSIAN;
+		} elseif ($port InstanceOf Saman) {
+			$name = Enum::SAMAN;
+		} elseif ($port InstanceOf Zarinpal) {
+			$name = Enum::ZARINPAL;
+		} elseif ($port InstanceOf ZarinpalWages) {
             $name = Enum::ZARINPALWAGES;
         } elseif ($port InstanceOf Sadad) {
-            $name = Enum::SADAD;
-        } elseif ($port InstanceOf Asanpardakht) {
-            $name = Enum::ASANPARDAKHT;
-        } elseif ($port InstanceOf Paypal) {
-            $name = Enum::PAYPAL;
-        } elseif ($port InstanceOf Payir) {
-            $name = Enum::PAYIR;
+			$name = Enum::SADAD;
+		} elseif ($port InstanceOf Asanpardakht) {
+			$name = Enum::ASANPARDAKHT;
+		} elseif ($port InstanceOf Paypal) {
+			$name = Enum::PAYPAL;
+		} elseif ($port InstanceOf Payir) {
+			$name = Enum::PAYIR;
         } elseif ($port InstanceOf Yekpay) {
             $name = Enum::YEKPAY;
-        }  elseif(in_array(strtoupper($port),$this->getSupportedPorts())){
-            $port=ucfirst(strtolower($port));
-            $name=strtoupper($port);
-            $class=__NAMESPACE__.'\\'.$port.'\\'.$port;
-            $port=new $class;
-        } else
-            throw new PortNotFoundException;
+		}  elseif(in_array(strtoupper($port),$this->getSupportedPorts())){
+			$port=ucfirst(strtolower($port));
+			$name=strtoupper($port);
+			$class=__NAMESPACE__.'\\'.$port.'\\'.$port;
+			$port=new $class;
+		} else
+			throw new PortNotFoundException;
 
-        $this->port = $port;
-        $this->port->setConfig($this->config); // injects config
-        $this->port->setPortName($name); // injects config
-        $this->port->boot();
+		$this->port = $port;
+		$this->port->setConfig($this->config); // injects config
+		$this->port->setPortName($name); // injects config
+		$this->port->boot();
 
-        return $this;
-    }
+		return $this;
+	}
 }

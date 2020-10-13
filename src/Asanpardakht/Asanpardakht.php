@@ -3,9 +3,6 @@
 namespace Hosseinizadeh\Gateway\Asanpardakht;
 
 use Hosseinizadeh\Gateway\Enum;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Input;
-use Mockery\Exception;
 use SoapClient;
 use Hosseinizadeh\Gateway\PortAbstract;
 use Hosseinizadeh\Gateway\PortInterface;
@@ -37,6 +34,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
     public function setWages(array $wages)
     {
         $this->wages = $wages;
+
         return $this;
     }
 
@@ -45,7 +43,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
      */
     public function ready()
     {
-        if (isset($this->wages)) {
+        if (isset($this->wages) && count($this->wages)) {
             $this->sendPayRequestWages();
             return $this;
         }
@@ -195,6 +193,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
         throw new AsanpardakhtException($response);
     }
 
+
     /**
      * @return bool
      * @throws AsanpardakhtException
@@ -219,12 +218,10 @@ class Asanpardakht extends PortAbstract implements PortInterface
 
         $additionalData = $this->getCustomDesc();
 
-
         list($array, $errors) = $this->wagesArray();
         if (!isset($array) || $errors == true) {
             return false;
         }
-
 
         $data = [
             'merchantConfigurationId' => $this->config->get('gateway.asanpardakht.merchantConfigId'),
@@ -257,7 +254,6 @@ class Asanpardakht extends PortAbstract implements PortInterface
         $this->newLog($response['code'], AsanpardakhtException::getMessageByCode($response['code']));
         throw new AsanpardakhtException($response);
     }
-
 
     /**
      * @param $payGateTranId
@@ -391,7 +387,7 @@ class Asanpardakht extends PortAbstract implements PortInterface
     /**
      * @return array
      */
-    protected function wagesArray(): array
+    protected function wagesArray()
     {
         $errors = false;
         $array = [];
@@ -407,5 +403,4 @@ class Asanpardakht extends PortAbstract implements PortInterface
         }
         return array($array, $errors);
     }
-
 }

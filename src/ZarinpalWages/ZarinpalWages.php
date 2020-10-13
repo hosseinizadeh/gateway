@@ -3,7 +3,6 @@
 namespace Hosseinizadeh\Gateway\ZarinpalWages;
 
 use DateTime;
-use Illuminate\Support\Facades\Input;
 use Hosseinizadeh\Gateway\Enum;
 use Hosseinizadeh\Gateway\PortAbstract;
 use Hosseinizadeh\Gateway\PortInterface;
@@ -33,6 +32,7 @@ class ZarinpalWages extends PortAbstract implements PortInterface
      */
     protected $wagesVerify = "https://api.zarinpal.com/pg/v4/payment/verify.json";
 
+
     /**
      * Address of germany SOAP server
      *
@@ -45,7 +45,7 @@ class ZarinpalWages extends PortAbstract implements PortInterface
      *
      * @var string
      */
-    protected $iranServer = 'https://ir.zarinpal.com/pg/services/WebGate/wsdl';
+    protected $iranServer = 'https://www.zarinpal.com/pg/services/WebGate/wsdl';
 
     /**
      * Address of sandbox SOAP server
@@ -242,16 +242,13 @@ class ZarinpalWages extends PortAbstract implements PortInterface
     }
 
     /**
-     * Check user payment with GET data
-     *
      * @return bool
-     *
-     * @throws ZarinpalException
+     * @throws ZarinpalWagesException
      */
     protected function userPayment()
     {
-        $this->authority = Input::get('Authority');
-        $status = Input::get('Status');
+        $this->authority = Request('Authority');
+        $status = Request('Status');
 
         if ($status == 'OK') {
             return true;
@@ -365,11 +362,11 @@ class ZarinpalWages extends PortAbstract implements PortInterface
     // ================================================= extra function ===================================
 
     /**
-     * @param string $jsonData
+     * @param $jsonData
      * @param $url
      * @return array
      */
-    protected function curlPostWages(string $jsonData, $url): array
+    protected function curlPostWages($jsonData, $url)
     {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
@@ -390,7 +387,7 @@ class ZarinpalWages extends PortAbstract implements PortInterface
     /**
      * @return array
      */
-    protected function wagesArray(): array
+    protected function wagesArray()
     {
         $errors = false;
         $array = [];
